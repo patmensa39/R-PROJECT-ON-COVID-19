@@ -1,5 +1,5 @@
 ---
-title: "Math 660"
+title: "COVID 19"
 output:
   pdf_document: default
   html_document: default
