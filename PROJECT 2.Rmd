@@ -1,0 +1,186 @@
+---
+title: "Math 660"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+date: "October 4th 2020"
+theme: cerulean
+---
+
+<!-- For more info on RMarkdown see http://rmarkdown.rstudio.com/ -->
+
+## Name: PROJECT 2
+
+### The data used for this project is the New York COVID data which was downloaded from the New York States website in July 2020. This contain two datasets. The first dataset contains COVID data aggregated by New York City zipcodes only. The second data set contains daily cases, deaths, and hospitalizations in New York State from February to July 2020.  
+
+### Importing the two datasets.
+```{r echo=FALSE}
+library(ggplot2)
+covidzipcodecounts<- read.csv("CovidData-NYCZipcodeCounts.csv", header = T, sep = ",")
+coviddailycounts<- read.csv("CovidData-NYStateDailyCounts.csv", header = T, sep = ",")
+```
+
+### (a) A bar graph showing the number of zipcodes in each NYC borough.  
+```{r echo=FALSE, fig.align='center'}
+ggplot(data = covidzipcodecounts,mapping = aes(x=BOROUGH_GROUP))+ geom_bar()
+```
+
+### (b) Histogram of the number of covid deaths by zipcode, using a bin with of 20.  
+```{r echo=FALSE, fig.align='center'}
+ggplot(data = covidzipcodecounts)+ geom_histogram(mapping = aes(x=COVID_DEATH_COUNT), binwidth = 20)
+```
+
+### (c) Similar to histogram of the number of covid deaths by zipcode, using a bin with of 100, but with the bars represented by points instead  
+```{r echo=FALSE, fig.align='center'}
+g<-ggplot(covidzipcodecounts, aes(COVID_CASE_COUNT))
+g+stat_bin(binwidth = 100, geom="point")
+```
+
+### (d) Side-by-side plot of the percent tested positive in each zicode.
+```{r echo=FALSE, fig.align='center'}
+ggplot(covidzipcodecounts, mapping = aes(x=BOROUGH_GROUP, y=PERCENT_POSITIVE))+ geom_boxplot()
+```
+
+### (e) Scatter plot of Covid death by zipcode vs Covid cases by Zipcode. 
+```{r echo=FALSE, fig.align='center'}
+qplot(COVID_CASE_COUNT,COVID_DEATH_COUNT, data = covidzipcodecounts, color= BOROUGH_GROUP)
+```
+
+### (f) Scatter plot of zipcode deaths vs case counts, separated by borough and with a fitted line.
+```{r echo=FALSE, fig.align='center'}
+w<-ggplot(covidzipcodecounts,aes(x=COVID_CASE_COUNT,y=COVID_DEATH_COUNT))+geom_point()
+w+facet_grid(rows = vars(BOROUGH_GROUP))+geom_smooth(formula = y~x, method = "lm", se=TRUE,color='red')
+```
+
+### (g) A timeplot of the daily number of cases and number of hospitalization.
+```{r echo=FALSE, fig.align='center'}
+coviddailycounts$DATE_OF_INTEREST <- as.Date.character(coviddailycounts$DATE_OF_INTEREST, format = "%m/%d/%y")
+coviddailycounts$Num_days <- seq(1:nrow(coviddailycounts))
+ggplot(coviddailycounts, aes(x=Num_days, y=Cases)) + 
+  geom_point() + 
+  geom_line(aes(y=Hospitalizations), color='gray') + 
+  xlab("Day 1 is Feb 29, 2020") + 
+  ylab("Number of Cases and Hospitalizations")
+```
+
+### (h) Scatter plot of daily number of deaths vs daily number of cases. 
+```{r echo=FALSE, fig.align='center'}
+qplot(Cases, Deaths, data = coviddailycounts, color=Hospitalizations)+geom_point(size=1, shape=3)
+```
+
+### (i) Scatter plot of the diaily propotion of deaths to cases, vs number of cases. 
+```{r echo=FALSE, fig.align='center'}
+coviddailycounts$prop <- ifelse(coviddailycounts$Cases==0, coviddailycounts$Deaths/(coviddailycounts$Cases+0.000000001), coviddailycounts$Deaths/coviddailycounts$Cases)
+ggplot(coviddailycounts, aes(x=Cases, y=prop, color=Hospitalizations)) + 
+  geom_point() +
+  ylab("Proportion of deaths to cases")
+```
+
+## 2. 
+### (a) The total number of cases in New York City. 
+```{r}
+Totalcases <- sum(covidzipcodecounts[, "COVID_CASE_COUNT"])
+print(paste("Total number of cases in New York City is", Totalcases), quote=FALSE)
+
+### total population of New York City
+Totalpop <- sum(covidzipcodecounts[, "POP_DENOMINATOR"])
+print(paste("Total population of New York City is", Totalpop), quote=FALSE)
+```
+
+### (b) summary statistics all the numerical columns in Covid by zipcode using lapply and sapply function.
+```{r echo=FALSE, fig.align='center'}
+### lappy functions
+lapply(list(covidzipcodecounts[4:10]), FUN=summary)
+
+### sapply functions
+sapply(list(covidzipcodecounts[4:10]), FUN=summary)
+```
+
+### (c) Summary statistics of Covid case counts for Brooklyn zipcodes only.
+```{r}
+attach(covidzipcodecounts)
+brooklynstats <- summary(COVID_CASE_COUNT[BOROUGH_GROUP=="Brooklyn"])
+brooklynstats
+detach(covidzipcodecounts)
+```
+
+### (d) Summary statistics of Covid case counts for Queens zipcodes only.
+```{r}
+attach(covidzipcodecounts)
+
+### for Queens
+queensstats<-summary(COVID_CASE_COUNT[BOROUGH_GROUP=="Queens"])
+queensstats
+
+print(" ", quote=FALSE)
+### for Staten Island
+StatenIslandstats<-summary(COVID_CASE_COUNT[BOROUGH_GROUP=="Staten Island"])
+StatenIslandstats
+detach(covidzipcodecounts)
+```
+
+### (e) Identifying the NYC zipcode and neighbourhood name with the highest death rate.
+```{r}
+attach(covidzipcodecounts)
+zip = MODIFIED_ZCTA[which(COVID_DEATH_RATE == max(COVID_DEATH_RATE))]
+neighborhood = NEIGHBORHOOD_NAME[which(COVID_DEATH_RATE == max(COVID_DEATH_RATE))]
+print(paste("The neighborhood with the highest death rate is", neighborhood, "and their zipcode is", zip), quote=FALSE)
+detach(covidzipcodecounts)
+```
+
+### (f) The day on the most number of hospitalizations relative to cases in NY Sate is 
+```{r}
+attach(coviddailycounts)
+DATE_OF_INTEREST[which(Hospitalizations == max(Hospitalizations))]
+detach(coviddailycounts)
+```
+
+ 
+## 3.
+
+### (a) Using a sequence to create a vector with elements 0, 5,10,15, 15,...75. 
+```{r}
+myvectorpat<-seq(0,75,by=5)
+myvectorpat
+# print(paste0(), quote=FALSE)
+
+### Extracting the 12th value of the vector.
+print(paste("The 12th value is", myvectorpat[12]))
+```
+
+### (b) Reversing the order of your vector above.
+```{r}
+rev(myvectorpat)
+```
+
+### (c) Creating a vector consisting of thirty 1's, twenty-two 6's and seventeen 3's. 
+```{r}
+myvectorpat2<-rep(c(1,6,3), c(30,22,17))
+myvectorpat2
+```
+### (d) Creating a diagonal matrix with all the numbers 20, 18, 16, ... 4, 2 in the diagonal 
+```{r}
+mymatrixpat<-diag(seq(20,2,by=-2))
+mymatrixpat
+### Finding the inverse of the matrix created.
+solve(mymatrixpat)
+```
+
+### (e) Extrating the 7th column of the matrix you created in 3(d).
+```{r}
+### Making the 7 column of the matrix a vector.
+
+myvectorpat3<-mymatrixpat[,7]
+
+myvectorpat3
+
+### Turnimg the vector into a 5*2 matrix, filling out the matrix, filling out the matrix by column.
+
+mymatrixpat3<-matrix(c(myvectorpat3), nrow = 2, ncol = 5, byrow = F)
+
+mymatrixpat3
+```
+
+
+
